@@ -1086,6 +1086,15 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 					err_text = _get_call_error(err, "function '" + methodstr + "' in base '" + basestr + "'", (const Variant **)argptrs);
 					OPCODE_BREAK;
 				}
+#else
+				if (err.error == Variant::CallError::CALL_ERROR_INVALID_METHOD) {
+					String message = "Calling non-existent method '" + String(*methodname) + "' on base '" + base->get_type_name(base->get_type()) + "' at " + String(name) + " - " + _script->path + ":" + itos(line);
+					if (Engine::get_singleton()->has_singleton("CrashThrow")) {
+						Object *crash = Engine::get_singleton()->get_singleton_object("CrashThrow");
+						crash->call("Throw", message);
+						GD_ERR_BREAK(1);
+					}
+				}
 #endif
 
 				//_call_func(NULL,base,*methodname,ip,argc,p_instance,stack);

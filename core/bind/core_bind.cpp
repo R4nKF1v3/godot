@@ -1275,7 +1275,12 @@ void _OS::alert(const String &p_alert, const String &p_title) {
 }
 
 void _OS::crash(const String &p_message) {
-	CRASH_NOW_MSG(p_message);
+	if (Engine::get_singleton()->has_singleton("CrashThrow")) {
+		Object *crash = Engine::get_singleton()->get_singleton_object("CrashThrow");
+		crash->call("Throw", p_message);
+	} else {
+		CRASH_NOW_MSG(p_message);
+	}
 }
 
 bool _OS::request_permission(const String &p_name) {
