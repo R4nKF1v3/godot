@@ -5,7 +5,7 @@ on:
 # Global Settings
 env:
   # Only used for the cache key. Increment version to force clean build.
-  GODOT_BASE_BRANCH: 3.x
+  GODOT_BASE_BRANCH: 3.6
   SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
 
 concurrency:
@@ -33,8 +33,8 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Godot build cache
-        uses: ./.github/actions/godot-cache
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
         continue-on-error: true
 
       - name: Setup python and scons
@@ -55,6 +55,10 @@ jobs:
           platform: android
           target: release
           tools: false
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        continue-on-error: true
 
       - name: Generate Godot templates
         run: |

@@ -5,7 +5,7 @@ on:
 # Global Settings
 env:
   # Only used for the cache key. Increment version to force clean build.
-  GODOT_BASE_BRANCH: 3.x
+  GODOT_BASE_BRANCH: 3.6
   SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
 
 concurrency:
@@ -20,8 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Godot build cache
-        uses: ./.github/actions/godot-cache
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
         continue-on-error: true
 
       - name: Setup python and scons
@@ -34,6 +34,10 @@ jobs:
           platform: iphone
           target: release
           tools: false
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        continue-on-error: true
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact

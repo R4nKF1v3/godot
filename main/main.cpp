@@ -67,6 +67,7 @@
 #include "servers/camera_server.h"
 #include "servers/navigation_2d_server.h"
 #include "servers/navigation_server.h"
+#include "servers/navigation_server_dummy.h"
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "servers/register_server_types.h"
@@ -81,7 +82,7 @@
 #include "editor/progress_dialog.h"
 #include "editor/project_manager.h"
 #include "editor/script_editor_debugger.h"
-#ifndef NO_EDITOR_SPLASH
+#if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
 #include "main/splash_editor.gen.h"
 #endif
 #endif
@@ -235,8 +236,21 @@ void finalize_physics() {
 
 void initialize_navigation_server() {
 	ERR_FAIL_COND(navigation_server != nullptr);
+
+	// Init 3D Navigation Server
 	navigation_server = NavigationServerManager::new_default_server();
+
+	// Fall back to dummy if no default server has been registered.
+	if (!navigation_server) {
+		navigation_server = memnew(NavigationServerDummy);
+	}
+
+	// Should be impossible, but make sure it's not null.
+	ERR_FAIL_NULL_MSG(navigation_server, "Failed to initialize NavigationServer.");
+
+	// Init 2D Navigation Server
 	navigation_2d_server = memnew(Navigation2DServer);
+	ERR_FAIL_NULL_MSG(navigation_2d_server, "Failed to initialize Navigation2DServer.");
 }
 
 void finalize_navigation_server() {
@@ -2350,16 +2364,17 @@ bool Main::iteration() {
 		}
 
 		Engine::get_singleton()->_in_physics = true;
+		Engine::get_singleton()->_physics_frames++;
 
 		uint64_t physics_begin = OS::get_singleton()->get_ticks_usec();
 
-		PhysicsServer::get_singleton()->flush_queries();
-
 		// Prepare the fixed timestep interpolated nodes
-		// BEFORE they are updated by the physics 2D,
+		// BEFORE they are updated by the physics,
 		// otherwise the current and previous transforms
 		// may be the same, and no interpolation takes place.
 		OS::get_singleton()->get_main_loop()->iteration_prepare();
+
+		PhysicsServer::get_singleton()->flush_queries();
 
 		Physics2DServer::get_singleton()->sync();
 		Physics2DServer::get_singleton()->flush_queries();
@@ -2384,7 +2399,6 @@ bool Main::iteration() {
 
 		physics_process_ticks = MAX(physics_process_ticks, OS::get_singleton()->get_ticks_usec() - physics_begin); // keep the largest one for reference
 		physics_process_max = MAX(OS::get_singleton()->get_ticks_usec() - physics_begin, physics_process_max);
-		Engine::get_singleton()->_physics_frames++;
 
 		Engine::get_singleton()->_in_physics = false;
 	}
