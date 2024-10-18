@@ -1087,8 +1087,20 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 					OPCODE_BREAK;
 				}
 #else
-				if (err.error == Variant::CallError::CALL_ERROR_INVALID_METHOD) {
-					String message = "Calling non-existent method '" + String(*methodname) + "' on base '" + base->get_type_name(base->get_type()) + "' at " + String(name) + " - " + _script->path + ":" + itos(line);
+				if (err.error != Variant::CallError::CALL_OK) {
+					String error_type = "";
+					if (err.error == Variant::CallError::CALL_ERROR_INVALID_METHOD) {
+						error_type = "Invalid method";
+					} else if (err.error == Variant::CallError::CALL_ERROR_INVALID_ARGUMENT) {
+						error_type = "Invalid argument";
+					} else if (err.error == Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS) {
+						error_type = "Too many arguments";
+					} else if (err.error == Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS) {
+						error_type = "Too few arguments";
+					} else if (err.error == Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL) {
+						error_type = "Instance is null";
+					}
+					String message = error_type + " on call '" + String(*methodname) + "' on base '" + base->get_type_name(base->get_type()) + "' at " + String(name) + " - " + _script->path + ":" + itos(line);
 					if (Engine::get_singleton()->has_singleton("CrashThrow")) {
 						Object *crash = Engine::get_singleton()->get_singleton_object("CrashThrow");
 						crash->call("Throw", message);
